@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SkyCast — Light Theme Weather</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --surface: rgba(255, 255, 255, 0.45); 
+      --surface-hover: rgba(255, 255, 255, 0.6);
+      --surface-inner: rgba(255, 255, 255, 0.5);
+      --border: rgba(255, 255, 255, 0.6); 
+      --accent: #0f172a; 
+      --accent-hover: #000000;
+      --text: #1e293b; 
+      --muted: #64748b; 
+      --danger: #ef4444;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+      background-color: #87CEEB; 
+      perspective: 1200px;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -10%; left: -10%; right: -10%; bottom: -10%;
+      z-index: -1;
+      background: 
+        linear-gradient(135deg, rgba(135,206,235,0.4) 0%, rgba(240,248,255,0.8) 100%),
+        url('https://images.unsplash.com/photo-1493305457700-d3d24daf8c8c?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
+      background-size: cover;
+      background-position: center;
+      /* OPTIMIZATION: Removed background-attachment: fixed; It forces layout repaints on scroll */
+      animation: driftClouds 60s linear infinite alternate;
+      will-change: transform; 
+    }
+
+    @keyframes driftClouds {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(-3%, 2%) scale(1.05); }
+    }
+
+    .container {
+      position: relative; 
+      z-index: 1; 
+      max-width: 860px; 
+      margin: 0 auto;
+      padding: 60px 24px 80px;
+    }
+
+    header { text-align: center; margin-bottom: 40px; }
+    header h1 { 
+      font-size: clamp(2.5rem, 6vw, 4rem); 
+      font-weight: 700; 
+      letter-spacing: -0.04em; 
+      color: #0f172a;
+      text-shadow: 0 4px 20px rgba(255,255,255,0.9); 
+    }
+    header p { color: var(--text); margin-top: 8px; font-size: 1.05rem; font-weight: 500; }
+
+    .search-wrap {
+      display: flex; gap: 12px; max-width: 520px; margin: 0 auto 48px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 8px;
+      backdrop-filter: blur(16px) saturate(150%);
+      -webkit-backdrop-filter: blur(16px) saturate(150%);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.08), inset 0 2px 5px rgba(255,255,255,1);
+      transition: all 0.3s ease;
+    }
+    .search-wrap:focus-within {
+      transform: translateY(-2px);
+      background: var(--surface-hover);
+      box-shadow: 0 25px 50px rgba(0,0,0,0.12), inset 0 2px 5px rgba(255,255,255,1);
+    }
+    .search-wrap input { flex: 1; background: transparent; border: none; padding: 12px 24px; font-family: inherit; font-size: 1rem; font-weight: 500; color: var(--text); outline: none; }
+    .search-wrap input::placeholder { color: #94a3b8; }
+
+    .btn { background: var(--accent); color: #fff; border: none; border-radius: 100px; padding: 12px 32px; font-family: inherit; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; white-space: nowrap; }
+    .btn:hover { background: var(--accent-hover); transform: scale(1.02); }
+
+    .error-msg { text-align: center; color: var(--danger); background: rgba(255, 255, 255, 0.9); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 16px; padding: 14px 20px; margin-bottom: 32px; display: none; font-weight: 500; }
+
+    /* 3D Glass Card Styling */
+    .tilt-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(16px) saturate(140%);
+      -webkit-backdrop-filter: blur(16px) saturate(140%);
+      box-shadow: 0 25px 50px rgba(0,0,0,0.08), inset 0 2px 3px rgba(255,255,255,0.9);
+      transform-style: preserve-3d; 
+      transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+      border-radius: 32px;
+      padding: 40px;
+      will-change: transform; 
+    }
+
+    .card-content-float { transform: translateZ(40px); pointer-events: none; }
+
+    .current-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 24px; margin-bottom: 40px; }
+    .city-name { font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 700; color: #0f172a;}
+    .city-name span { color: var(--muted); font-size: 0.8em; font-weight: 500; display: block; margin-top: 4px; }
+    .temp-big { font-size: clamp(4.5rem, 10vw, 6.5rem); font-weight: 300; line-height: 1; letter-spacing: -0.04em; color: #0f172a; }
+    .weather-icon { font-size: 64px; line-height: 1; margin-bottom: 10px; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1));}
+    .description { color: var(--text); font-size: 1.25rem; margin-top: 8px; text-transform: capitalize; font-weight: 600;}
+
+    /* Inner stats */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; transform: translateZ(20px); }
+    .stat {
+      background: var(--surface-inner);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 20px;
+      display: flex; flex-direction: column; justify-content: space-between;
+      min-height: 110px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.02), inset 0 2px 2px rgba(255,255,255,0.7);
+    }
+    .stat-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+    .stat:nth-child(1) .stat-label::before { content: '🌡️'; }
+    .stat:nth-child(2) .stat-label::before { content: '💧'; }
+    .stat:nth-child(3) .stat-label::before { content: '🌪️'; }
+    .stat:nth-child(4) .stat-label::before { content: '👁️'; }
+    .stat:nth-child(5) .stat-label::before { content: '⏲️'; }
+    .stat-value { font-size: 1.6rem; font-weight: 600; color: #0f172a; }
+
+    /* Forecast */
+    .section-title { font-size: 0.95rem; color: #0f172a; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 48px 0 20px 8px; display: flex; align-items: center; gap: 8px; }
+    .section-title::before { content: '📅'; }
+
+    .forecast-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px; }
+    
+    .forecast-card {
+      text-align: center;
+      padding: 24px 10px;
+      display: flex; flex-direction: column; align-items: center;
+      border-radius: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(12px) saturate(140%);
+      -webkit-backdrop-filter: blur(12px) saturate(140%);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.05), inset 0 2px 3px rgba(255,255,255,0.8);
+      transform-style: preserve-3d;
+      transition: transform 0.15s ease-out;
+      will-change: transform; 
+    }
+    .forecast-card-inner { transform: translateZ(20px); pointer-events: none; }
+    .forecast-date { font-size: 0.95rem; color: var(--muted); font-weight: 600; margin-bottom: 12px; }
+    .forecast-icon { font-size: 38px; margin-bottom: 12px; filter: drop-shadow(0 5px 10px rgba(0,0,0,0.1)); }
+    .forecast-desc { display: none; }
+    .forecast-temps { display: flex; justify-content: center; gap: 12px; font-size: 1.15rem; }
+    .temp-hi { font-weight: 700; color: #0f172a; }
+    .temp-lo { color: var(--muted); font-size: 0.95rem; margin-top: 2px; font-weight: 600;}
+
+    #results { display: none; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>SkyCast</h1>
+      <p>Premium Weather Intelligence</p>
+    </header>
+
+    <div class="search-wrap">
+      <input type="text" id="cityInput" placeholder="Enter a city…" autocomplete="off" />
+      <button class="btn" id="searchBtn" onclick="fetchWeather()">Search</button>
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <div id="results">
+      <!-- Current weather -->
+      <div class="tilt-card" id="currentCard">
+        <div class="card-content-float">
+          <div class="current-top">
+            <div>
+              <div class="city-name" id="cityName"></div>
+              <div class="description" id="desc"></div>
+            </div>
+            <div style="text-align:right">
+              <div class="weather-icon" id="icon"></div>
+              <div class="temp-big" id="temp"></div>
+            </div>
+          </div>
+          <div class="stats-grid">
+            <div class="stat"><div class="stat-label">Feels Like</div><div class="stat-value" id="feelsLike"></div></div>
+            <div class="stat"><div class="stat-label">Humidity</div><div class="stat-value" id="humidity"></div></div>
+            <div class="stat"><div class="stat-label">Wind</div><div class="stat-value" id="wind"></div></div>
+            <div class="stat"><div class="stat-label">Visibility</div><div class="stat-value" id="visibility"></div></div>
+            <div class="stat"><div class="stat-label">Pressure</div><div class="stat-value" id="pressure"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Forecast -->
+      <div class="section-title">5-Day Forecast</div>
+      <div class="forecast-grid" id="forecastGrid"></div>
+    </div>
+  </div>
+
+  <script>
+    const input = document.getElementById('cityInput');
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') fetchWeather(); });
+
+    const ICON_MAP = {
+      '01': '☀️', '02': '⛅', '03': '☁️', '04': '☁️',
+      '09': '🌧️', '10': '🌦️', '11': '⛈️', '13': '❄️', '50': '🌫️'
+    };
+    
+    function weatherEmoji(icon) {
+      const code = icon.slice(0, 2);
+      return ICON_MAP[code] || '🌤️';
+    }
+    
+    function fmtDate(dateStr) {
+      const d = new Date(dateStr + 'T12:00:00');
+      return d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' });
+    }
+
+    // SCROLL OPTIMIZATION: Disable pointer events (hover/mousemove) while scrolling
+    let scrollTimeout;
+    window.addEventListener('scroll', () => {
+      document.body.style.pointerEvents = 'none'; // Turn off mouse calculations
+      
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        document.body.style.pointerEvents = 'auto'; // Turn them back on when scrolling stops
+      }, 150); // Wait 150ms after the last scroll event
+    });
+
+    // 3D TILT EFFECT LOGIC (Using requestAnimationFrame)
+    function applyTiltEffect() {
+      const tiltElements = document.querySelectorAll('.tilt-card, .forecast-card');
+      
+      tiltElements.forEach(el => {
+        let ticking = false; 
+
+        el.addEventListener('mousemove', (e) => {
+          if (!ticking) {
+            window.requestAnimationFrame(() => {
+              const rect = el.getBoundingClientRect();
+              const x = e.clientX - rect.left - rect.width / 2;
+              const y = e.clientY - rect.top - rect.height / 2;
+              
+              const rotateX = (y / (rect.height / 2)) * -5; 
+              const rotateY = (x / (rect.width / 2)) * 5;   
+              
+              el.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+              ticking = false;
+            });
+            ticking = true;
+          }
+        });
+        
+        el.addEventListener('mouseleave', () => {
+          window.requestAnimationFrame(() => {
+            el.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+          });
+        });
+      });
+    }
+
+    async function fetchWeather() {
+      const city = input.value.trim();
+      if (!city) return;
+
+      const btn = document.getElementById('searchBtn');
+      const errorDiv = document.getElementById('errorMsg');
+      const results = document.getElementById('results');
+
+      btn.disabled = true;
+      btn.textContent = 'Loading...';
+      errorDiv.style.display = 'none';
+      results.style.display = 'none';
+
+      try {
+        const res = await fetch(`/api/weather?city=${encodeURIComponent(city)}`);
+        const data = await res.json();
+
+        if (!res.ok) {
+          errorDiv.textContent = data.error || 'Something went wrong.';
+          errorDiv.style.display = 'block';
+          return;
+        }
+
+        const c = data.current;
+        document.getElementById('cityName').innerHTML = `${c.city} <span>${c.country}</span>`;
+        document.getElementById('desc').textContent = c.description;
+        document.getElementById('icon').textContent = weatherEmoji(c.icon);
+        document.getElementById('temp').textContent = `${Math.round(c.temp)}°`;
+        document.getElementById('feelsLike').textContent = `${Math.round(c.feels_like)}°`;
+        document.getElementById('humidity').textContent = `${c.humidity}%`;
+        document.getElementById('wind').textContent = `${c.wind_speed} km/h`;
+        document.getElementById('visibility').textContent = `${c.visibility} km`;
+        document.getElementById('pressure').textContent = `${c.pressure} hPa`;
+
+        const grid = document.getElementById('forecastGrid');
+        grid.innerHTML = data.forecast.map((f, i) => `
+          <div class="forecast-card" style="animation-delay:${i * 0.05}s">
+            <div class="forecast-card-inner">
+              <div class="forecast-date">${i === 0 ? 'Today' : fmtDate(f.date)}</div>
+              <div class="forecast-icon">${weatherEmoji(f.icon)}</div>
+              <div class="forecast-desc">${f.description}</div>
+              <div class="forecast-temps">
+                <span class="temp-hi">${Math.round(f.temp_max)}°</span>
+                <span class="temp-lo">${Math.round(f.temp_min)}°</span>
+              </div>
+            </div>
+          </div>
+        `).join('');
+
+        results.style.display = 'block';
+        applyTiltEffect();
+
+      } catch (err) {
+        errorDiv.textContent = 'Network error. Is the Flask server running?';
+        errorDiv.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Search';
+      }
+    }
+  </script>
+</body>
+</html>
