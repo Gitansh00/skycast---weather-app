@@ -27,7 +27,7 @@ weather-app/
 
 ### 1. Clone the repo
 ```bash
-git clone https://github.com/yourusername/weather-app.git
+git clone https://github.com/Gitansh00/skycast---weather-app.git
 cd weather-app
 ```
 
